@@ -1,3 +1,4 @@
 Django
 django-classy-tags
 django-coverage
+coverage
