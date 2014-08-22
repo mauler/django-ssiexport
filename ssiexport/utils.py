@@ -32,7 +32,7 @@ def get_watch_instances():
                     Instance.objects.get_or_create(
                         content_type=ct, object_id=instance.pk)
                 instances.append(dbinstance)
-    return instances
+    return set(instances)
 
 
 def export_url(url):

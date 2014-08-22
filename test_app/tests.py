@@ -43,4 +43,7 @@ class UtilsTestCase(TestCase):
         world.watch.append(self.article)
         world.watch.append(Author.objects.all())
         instances = get_watch_instances()
-        self.assertEqual(instances, [])
+        self.assertEqual(
+            [i.content_object for i in instances],
+            [self.article, self.paulo, self.roberto]
+        )
