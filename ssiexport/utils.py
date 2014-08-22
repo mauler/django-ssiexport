@@ -71,5 +71,5 @@ def export_instance(instance):
     dbinstance, created = \
         Instance.objects.get_or_create(content_type=ct, object_id=instance.pk)
     dburl.instance = dbinstance
-    dburl.save(update_fields=['instance'])
-    return dbinstance
+    dburl.save()
+    return dburl, dbinstance

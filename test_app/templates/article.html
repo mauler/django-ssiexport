@@ -1,0 +1,18 @@
+{% extends "index.html" %}
+
+{% load ssiexport_tags %}
+
+{% block body %}
+    <h1>
+        {{ article }}
+    </h1>
+    {{ article.text|linebreaks }}
+    {% if article.authors.exists %}
+    <p>
+        {% watch article.authors.all %}
+        {% for author in article.authors.all %}
+            {{  author }},
+        {% endfor %}
+    </p>
+    {% endif %}
+{% endblock %}

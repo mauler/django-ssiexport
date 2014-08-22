@@ -18,6 +18,9 @@ class Template(models.Model):
     name = models.CharField(db_index=True, max_length=100, unique=True)
     md5sum = models.CharField(max_length=32)
 
+    def __unicode__(self):
+        return self.name
+
 
 class URL(models.Model):
     path = models.CharField(db_index=True, max_length=255, unique=True)

@@ -18,7 +18,6 @@ class Watch(Tag):
     )
 
     def render_tag(self, context, objects):
-        print 'objects', objects
         if hasattr(world, "watch"):
             world.watch += objects
         return ""
