@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from distutils.filelist import findall
+
 from django.test import TestCase
 
 from ssiexport.monkeypatch import apply_monkeypatch
@@ -37,6 +39,9 @@ class UtilsTestCase(TestCase):
             dburl.templates.all(),
             ['<Template: index.html>'],
         )
+        self.assertEqual(
+            findall("export"),
+            ['export/www/index.shtml', 'export/www/article/1/index.shtml'])
 
     def test_get_watch_instances(self):
         from ssiexport import world
@@ -47,3 +52,6 @@ class UtilsTestCase(TestCase):
             [i.content_object for i in instances],
             [self.article, self.paulo, self.roberto]
         )
+        self.assertEqual(
+            findall("export"),
+            ['export/www/index.shtml', 'export/www/article/1/index.shtml'])
