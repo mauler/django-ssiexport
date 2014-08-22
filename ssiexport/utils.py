@@ -1,16 +1,31 @@
 # coding: utf-8
 
 from distutils.dir_util import mkpath
-import hashlib
 from os.path import join
+import hashlib
+import sys
 
 from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
 from django.db.models.query import QuerySet
 from django.db import models
 from django.test.client import Client
 
 from ssiexport.models import Instance, URL, Template
 from ssiexport import world, SSIEXPORT_WWW_PATH
+
+
+def get_exporters():
+    exporters = []
+    for app in settings.INSTALLED_APPS:
+        module = "%s.export" % app
+        try:
+            __import__(module)
+            module = sys.modules[module]
+            exporters += getattr(module, "exporters", [])
+        except ImportError:
+            pass
+    return exporters
 
 
 def get_watch_instances():

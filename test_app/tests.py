@@ -5,8 +5,10 @@ from distutils.filelist import findall
 from django.test import TestCase
 
 from ssiexport.monkeypatch import apply_monkeypatch
-from ssiexport.utils import export_instance, export_url, get_watch_instances
+from ssiexport.utils import \
+    export_instance, export_url, get_watch_instances, get_exporters
 
+from .export import ArticleExport
 from .models import Article, Author
 
 
@@ -42,6 +44,9 @@ class UtilsTestCase(TestCase):
         self.assertEqual(
             findall("export"),
             ['export/www/index.shtml', 'export/www/article/1/index.shtml'])
+
+    def test_get_exporters(self):
+        self.assertEqual(get_exporters(), [ArticleExport])
 
     def test_get_watch_instances(self):
         from ssiexport import world
