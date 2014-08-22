@@ -2,7 +2,8 @@
 
 from django.test import TestCase
 
-from ssiexport.utils import export_url, export_instance
+from ssiexport.monkeypatch import apply_monkeypatch
+from ssiexport.utils import export_instance, export_url, get_watch_instances
 
 from .models import Article, Author
 
@@ -14,6 +15,16 @@ class UtilsTestCase(TestCase):
         self.roberto = Author.objects.create(name="Roberto")
         self.article = Article.objects.create(title="My First Post")
         self.article.authors.add(self.paulo)
+
+    def test_apply_monkeypatch(self):
+        self.assertTrue(apply_monkeypatch())
+
+    def test_export_instance(self):
+        dburl, dbinstance = export_instance(self.article)
+        self.assertQuerysetEqual(
+            dburl.templates.all(),
+            ['<Template: article.html>', '<Template: index.html>'],
+        )
 
     def test_export_url(self):
         dburl = export_url("/")
@@ -27,9 +38,9 @@ class UtilsTestCase(TestCase):
             ['<Template: index.html>'],
         )
 
-    def test_export_instance(self):
-        dburl, dbinstance = export_instance(self.article)
-        self.assertQuerysetEqual(
-            dburl.templates.all(),
-            ['<Template: article.html>', '<Template: index.html>'],
-        )
+    def test_get_watch_instances(self):
+        from ssiexport import world
+        world.watch.append(self.article)
+        world.watch.append(Author.objects.all())
+        instances = get_watch_instances()
+        self.assertEqual(instances, [])
