@@ -7,6 +7,7 @@ import sys
 
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
+from django.db.models.loading import get_model
 from django.db.models.query import QuerySet
 from django.db.models import signals
 from django.db import models
@@ -25,12 +26,15 @@ def connect_signals():
                 return
 
             def post_save_signal(sender, instance, *args, **kwargs):
-                print 'queryset', qs.filter(pk=instance.pk)
+                open("post_save_signal", "w").write("post_save_signal")
                 if qs.filter(pk=instance.pk).exists():
+                    open("exists", "w").write("exists")
                     export_instance(instance)
 
-            signals.post_delete.connect(post_delete_signal, sender=qs.model)
-            signals.post_save.connect(post_save_signal, sender=qs.model)
+            model_class = get_model(
+                qs.model._meta.app_label, qs.model._meta.module_name)
+            signals.post_delete.connect(post_delete_signal, sender=model_class)
+            signals.post_save.connect(post_save_signal, sender=model_class)
 
 
 def export_instance(instance):
@@ -43,20 +47,24 @@ def export_instance(instance):
     return dburl, dbinstance
 
 
-def export_url(url):
+def export_url(original_url):
     world.watch = []
+    url = original_url
     if url.endswith("/"):
         url = url[:-1]
 
     path = join(SSIEXPORT_WWW_PATH, url[1:])
     world.path = path
     mkpath(path)
-    shtml = join(path, 'index.shtml')
+    shtmlpath = join(url[1:], 'index.shtml')
+    shtml = join(SSIEXPORT_WWW_PATH, shtmlpath)
     client = Client()
     response = client.get(url, follow=True)
     content = response.content
     open(shtml, 'w').write(content)
-    dburl, created = URL.objects.get_or_create(path=url)
+    dburl, created = URL.objects.get_or_create(
+        path=original_url,
+        defaults={'shtml': shtmlpath})
     if not created:
         dburl.templates.clear()
     for i in response.templates:

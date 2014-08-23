@@ -2,7 +2,10 @@
 
 from django.contrib.contenttypes.generic import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.storage import get_storage_class
 from django.db import models
+
+from __init__ import SSIEXPORT_WWW_PATH
 
 
 class Instance(models.Model):
@@ -16,6 +19,11 @@ class Instance(models.Model):
 
     def __unicode__(self):
         return "%s %s" % (self.content_type, self.object_id)
+
+    @staticmethod
+    def get_from_instance(instance):
+        ct = ContentType.objects.get_for_model(instance.__class__)
+        return ct.instance_set.get(object_id=instance.id)
 
 
 class Template(models.Model):
@@ -38,12 +46,16 @@ class URL(models.Model):
         related_name="instance_url_set",
     )
     instances = models.ManyToManyField("Instance")
+    shtml = models.FileField(
+        storage=get_storage_class()(SSIEXPORT_WWW_PATH),
+        upload_to="other",
+    )
 
     class Meta:
         ordering = ("path", )
 
     def __unicode__(self):
-        return self.url
+        return self.path
 
 
 class Include(models.Model):
