@@ -4,9 +4,11 @@ from distutils.filelist import findall
 
 from django.test import TestCase
 
+from ssiexport.models import URL
 from ssiexport.monkeypatch import apply_monkeypatch
 from ssiexport.utils import \
-    export_instance, export_url, get_watch_instances, get_exporters
+    export_instance, export_url, get_watch_instances, get_exporters, \
+    connect_signals
 
 from .export import ArticleExport
 from .models import Article, Author
@@ -60,3 +62,11 @@ class UtilsTestCase(TestCase):
         self.assertEqual(
             findall("export"),
             ['export/www/index.shtml', 'export/www/article/1/index.shtml'])
+
+    def test_connect_signals(self):
+        connect_signals()
+        article = Article.objects.create(title="new article")
+        # from django.db.models import signals
+        # signals.post_save.send(sender=type(article), instance=article)
+        qs = URL.objects.filter(path=article.get_absolute_url())
+        self.assertTrue(qs.exists())

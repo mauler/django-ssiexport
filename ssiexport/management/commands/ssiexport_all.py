@@ -24,14 +24,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         apply_monkeypatch()
 
-        for exporter in get_exporters():
+        for exporter_class in get_exporters():
 
-            exp = exporter()
-            for url in exp.get_urls():
+            exporter = exporter_class()
+            for url in exporter.get_urls():
                 print "URL", url
                 export_url(url)
 
-            for qs in getattr(exp, "get_querysets", lambda: [])():
+            for qs in getattr(exporter, "get_querysets", lambda: [])():
                 for instance in qs:
                     print "Instance", instance
                     export_instance(instance)
