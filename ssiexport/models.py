@@ -42,6 +42,9 @@ class URL(models.Model):
     class Meta:
         ordering = ("path", )
 
+    def __unicode__(self):
+        return self.url
+
 
 class Include(models.Model):
     url = models.ForeignKey("URL")

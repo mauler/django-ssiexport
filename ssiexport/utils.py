@@ -52,6 +52,9 @@ def get_watch_instances():
 
 def export_url(url):
     world.watch = []
+    if url.endswith("/"):
+        url = url[:-1]
+
     path = join(SSIEXPORT_WWW_PATH, url[1:])
     world.path = path
     mkpath(path)
