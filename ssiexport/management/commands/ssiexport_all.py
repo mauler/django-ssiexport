@@ -2,8 +2,9 @@
 
 from django.core.management.base import BaseCommand
 
+from ssiexport.loading import get_exporters
 from ssiexport.monkeypatch import apply_monkeypatch
-from ssiexport.utils import export_url, get_exporters, export_instance
+from ssiexport.export import export_url, export_instance
 
 from ssiexport import world
 
@@ -11,15 +12,8 @@ from ssiexport import world
 world.extends = None
 
 
-from django.conf import settings
-
-
-settings.STATIC_URL = "http://127.0.0.1:8666" + settings.STATIC_URL
-settings.MEDIA_URL = "http://127.0.0.1:8666" + settings.MEDIA_URL
-
-
 class Command(BaseCommand):
-    help = u"ssiexport"
+    help = u"Export all content"
 
     def handle(self, *args, **options):
         apply_monkeypatch()

@@ -6,7 +6,7 @@ from django.core.files.storage import get_storage_class
 from django.db.models import signals
 from django.db import models
 
-from __init__ import SSIEXPORT_WWW_PATH
+from . import SSIEXPORT_WWW_PATH
 
 
 class Instance(models.Model):
@@ -67,7 +67,8 @@ class Include(models.Model):
         ordering = ("url", 'template',)
 
 
-from .utils import get_exporters, export_instance, export_url
+from .export import export_instance, export_url
+from .loading import get_exporters
 
 
 for exporter_class in get_exporters():

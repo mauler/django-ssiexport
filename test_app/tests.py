@@ -5,11 +5,11 @@ from distutils.filelist import findall
 from django.core.management import call_command
 from django.test import TestCase
 
+from ssiexport.loading import get_exporters
+from ssiexport.export import export_instance, export_url
 from ssiexport.models import URL, Template
 from ssiexport.monkeypatch import apply_monkeypatch
-from ssiexport.utils import \
-    export_instance, export_url, get_watch_instances, get_exporters, \
-    get_modified_templates
+from ssiexport.utils import get_watch_instances, get_modified_templates
 
 from .export import ArticleExport
 from .models import Article, Author
