@@ -7,34 +7,27 @@ import sys
 
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
-from django.db.models.loading import get_model
 from django.db.models.query import QuerySet
-from django.db.models import signals
 from django.db import models
+from django.template.loader import get_template
 from django.test.client import Client
 
 from ssiexport.models import Instance, URL, Template
 from ssiexport import world, SSIEXPORT_WWW_PATH
 
 
-def connect_signals():
-    for exporter_class in get_exporters():
-        exporter = exporter_class()
-        for qs in getattr(exporter, "get_querysets", lambda: [])():
-
-            def post_delete_signal(sender, instance, *args, **kwargs):
-                return
-
-            def post_save_signal(sender, instance, *args, **kwargs):
-                open("post_save_signal", "w").write("post_save_signal")
-                if qs.filter(pk=instance.pk).exists():
-                    open("exists", "w").write("exists")
-                    export_instance(instance)
-
-            model_class = get_model(
-                qs.model._meta.app_label, qs.model._meta.module_name)
-            signals.post_delete.connect(post_delete_signal, sender=model_class)
-            signals.post_save.connect(post_save_signal, sender=model_class)
+def get_modified_templates():
+    modified = []
+    qs = Template.objects.values_list("md5sum", "name")
+    for md5sum, name in qs:
+        tpl = get_template(name)
+        source = open(tpl.nodelist[0].source[0].name).read()
+        current_md5sum = hashlib.md5(source).hexdigest()
+        tplqs = \
+            Template.objects.filter(name=name).exclude(md5sum=current_md5sum)
+        for dbtpl in tplqs:
+            modified.append(dbtpl)
+    return modified
 
 
 def export_instance(instance):

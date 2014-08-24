@@ -2,15 +2,27 @@
 
 from distutils.filelist import findall
 
+from django.core.management import call_command
 from django.test import TestCase
 
-from ssiexport.models import URL
+from ssiexport.models import URL, Template
 from ssiexport.monkeypatch import apply_monkeypatch
 from ssiexport.utils import \
-    export_instance, export_url, get_watch_instances, get_exporters
+    export_instance, export_url, get_watch_instances, get_exporters, \
+    get_modified_templates
 
 from .export import ArticleExport
 from .models import Article, Author
+
+
+class CommandTestCase(TestCase):
+
+    def setUp(self):
+        self.article1 = Article.objects.create(title="My First Post")
+        self.article2 = Article.objects.create(title="My Second Post")
+
+    def test_command_ssiexport_all(self):
+        call_command('ssiexport_all')
 
 
 class UtilsTestCase(TestCase):
@@ -49,6 +61,13 @@ class UtilsTestCase(TestCase):
     def test_get_exporters(self):
         self.assertEqual(get_exporters(), [ArticleExport])
 
+    def test_get_modified_templates(self):
+        export_instance(self.article)
+        Template.objects.update(md5sum="0" * 32)
+        tpls = get_modified_templates()
+        urlqs = URL.objects.filter(templates__in=tpls).distinct()
+        self.assertQuerysetEqual(urlqs, ['<URL: /article/1/>'])
+
     def test_get_watch_instances(self):
         from ssiexport import world
         world.watch.append(self.article)
@@ -56,45 +75,19 @@ class UtilsTestCase(TestCase):
         instances = get_watch_instances()
         self.assertEqual(
             [i.content_object for i in instances],
-            [self.article, self.paulo, self.roberto]
+            [
+                self.article,
+                self.paulo,
+                self.roberto,
+            ]
         )
         self.assertEqual(
             findall("export"),
             ['export/www/index.shtml', 'export/www/article/1/index.shtml'])
 
     def test_connect_signals(self):
-        from ssiexport.utils import connect_signals
-        connect_signals()
-        from django.db.models.loading import get_model
-        from django.db.models import signals
-        from ssiexport.models import Instance
-        for exporter_class in get_exporters():
-            exporter = exporter_class()
-            for qs in getattr(exporter, "get_querysets", lambda: [])():
-
-                def post_delete_signal(sender, instance, *args, **kwargs):
-                    instance = Instance.get_from_instance(instance)
-                    for dburl in instance.instance_url_set.all():
-                        dburl.shtml.delete()
-                        dburl.delete()
-
-                    for url in instance.url_set.all():
-                        export_url(url.path)
-
-                    instance.delete()
-
-                def post_save_signal(sender, instance, *args, **kwargs):
-                    if qs.filter(pk=instance.pk).exists():
-                        export_instance(instance)
-
-                model_class = get_model(
-                    qs.model._meta.app_label, qs.model._meta.module_name)
-                signals.post_delete.connect(
-                    post_delete_signal, sender=model_class)
-                signals.post_save.connect(
-                    post_save_signal, sender=model_class)
-
         article = Article.objects.create(title="new article")
+        export_url("/")
         qs = URL.objects.filter(path=article.get_absolute_url())
         self.assertTrue(qs.exists())
         article.delete()

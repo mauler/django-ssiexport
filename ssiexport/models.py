@@ -3,6 +3,7 @@
 from django.contrib.contenttypes.generic import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import get_storage_class
+from django.db.models import signals
 from django.db import models
 
 from __init__ import SSIEXPORT_WWW_PATH
@@ -64,3 +65,32 @@ class Include(models.Model):
 
     class Meta:
         ordering = ("url", 'template',)
+
+
+from .utils import get_exporters, export_instance, export_url
+
+
+for exporter_class in get_exporters():
+    exporter = exporter_class()
+    for qs in getattr(exporter, "get_querysets", lambda: [])():
+
+        def post_delete_signal(sender, instance, *args, **kwargs):
+            instance = Instance.get_from_instance(instance)
+            for dburl in instance.instance_url_set.all():
+                dburl.shtml.delete()
+                dburl.delete()
+
+            for url in instance.url_set.all():
+                export_url(url.path)
+
+            instance.delete()
+
+        def post_save_signal(sender, instance, *args, **kwargs):
+            if qs.filter(pk=instance.pk).exists():
+                export_instance(instance)
+
+        model_class = qs.model
+        signals.post_delete.connect(
+            post_delete_signal, sender=model_class)
+        signals.post_save.connect(
+            post_save_signal, sender=model_class)
