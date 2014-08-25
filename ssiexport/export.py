@@ -7,12 +7,12 @@ import hashlib
 from django.contrib.contenttypes.models import ContentType
 from django.test.client import Client
 
-from .models import Instance, URL, Template
 from .utils import get_watch_instances
 from . import world, SSIEXPORT_WWW_PATH
 
 
 def export_instance(instance):
+    from .models import Instance
     dburl = export_url(instance.get_absolute_url())
     ct = ContentType.objects.get_for_model(instance)
     dbinstance, created = \
@@ -23,6 +23,7 @@ def export_instance(instance):
 
 
 def export_url(original_url):
+    from .models import URL, Template
     world.watch = []
     url = original_url
     if url.endswith("/"):

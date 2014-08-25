@@ -48,6 +48,7 @@ class URL(models.Model):
     )
     instances = models.ManyToManyField("Instance")
     shtml = models.FileField(
+        max_length=1024,
         storage=get_storage_class()(SSIEXPORT_WWW_PATH),
         upload_to="other",
     )
