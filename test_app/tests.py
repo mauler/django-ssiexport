@@ -1,5 +1,6 @@
 # coding: utf-8
 
+from datetime import date
 from distutils.filelist import findall
 
 from django.core.management import call_command
@@ -8,7 +9,7 @@ from django.test import TestCase
 from ssiexport.loading import get_exporters
 from ssiexport.export import export_instance, export_url
 from ssiexport.models import URL, Template
-from ssiexport.monkeypatch import apply_monkeypatch
+from ssiexport.monkeypatch import apply_monkeypatch, apply_manager_monkeypatch
 from ssiexport.utils import get_watch_instances, get_modified_templates
 
 from .export import ArticleExport
@@ -23,6 +24,26 @@ class CommandTestCase(TestCase):
 
     def test_command_ssiexport_all(self):
         call_command('ssiexport_all')
+
+
+class MonkeyPatchTestCase(TestCase):
+
+    def setUp(self):
+        self.article1 = Article.objects.create(title="My First Post")
+        self.article2 = Article.objects.create(title="My Second Post")
+
+    def test_manager_monkeypatch(self):
+        apply_manager_monkeypatch(Article.objects)
+        qs = Article.objects.all()
+        qs = qs.filter(title__contains="foobar")
+        dt = date(2014, 01, 01)
+        qs = qs.exclude(date_created__lte=dt)
+        calls = qs._monkeypatch_calls
+        self.assertEqual(calls, [
+            ("all", (), {}),
+            ("filter", (), {"title__contains": "foobar"}),
+            ("exclude", (), {"date_created__lte": date(2014, 01, 01)}),
+        ])
 
 
 class UtilsTestCase(TestCase):
