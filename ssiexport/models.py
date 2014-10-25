@@ -3,12 +3,31 @@
 from django.contrib.contenttypes.generic import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import get_storage_class
+from django.db.models import manager
 from django.db.models import signals
 from django.db import models
 
 import bson
 
+from .monkeypatch import apply_manager_monkeypatch
 from . import SSIEXPORT_WWW_PATH
+
+
+manager_init_original = manager.Manager.__init__
+
+
+def manager_init(self, *args, **kwargs):
+    manager_init_original(self, *args, **kwargs)
+    apply_manager_monkeypatch(self)
+
+manager.Manager.__init__ = manager_init
+
+
+# def class_prepared_signal(sender, *args, **kwargs):
+#     apply_manager_monkeypatch(sender.objects)
+
+
+# signals.class_prepared.connect(class_prepared_signal)
 
 
 class Queryset(models.Model):
@@ -28,6 +47,7 @@ class Queryset(models.Model):
         return qs
 
     def set(self, qs):
+        self.content_type = ContentType.objects.get_for_model(qs.model)
         self.bson_data = bson.dumps({'data': qs._monkeypatch_calls})
 
 
@@ -98,6 +118,8 @@ for exporter_class in get_exporters():
     exporter = exporter_class()
     for qs in getattr(exporter, "get_querysets", lambda: [])():
 
+        model_class = qs.model
+
         def post_delete_signal(sender, instance, *args, **kwargs):
             instance = Instance.get_from_instance(instance)
             for dburl in instance.instance_url_set.all():
@@ -109,13 +131,12 @@ for exporter_class in get_exporters():
 
             instance.delete()
 
+        signals.post_delete.connect(
+            post_delete_signal, sender=model_class)
+
         def post_save_signal(sender, instance, *args, **kwargs):
             if qs.filter(pk=instance.pk).exists():
                 export_instance(instance)
 
-        model_class = qs.model
-
-        signals.post_delete.connect(
-            post_delete_signal, sender=model_class)
         signals.post_save.connect(
             post_save_signal, sender=model_class)

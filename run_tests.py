@@ -8,9 +8,9 @@ from django.conf import settings
 def main():
     settings.configure(
         INSTALLED_APPS=[
-            'test_app',
-
             'ssiexport',
+
+            'test_app',
 
             'django_coverage',
 

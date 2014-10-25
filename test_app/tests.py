@@ -3,14 +3,13 @@
 from datetime import date
 from distutils.filelist import findall
 
-from django.contrib.contenttypes.models import ContentType
 from django.core.management import call_command
 from django.test import TestCase
 
 from ssiexport.loading import get_exporters
 from ssiexport.export import export_instance, export_url
 from ssiexport.models import URL, Template, Queryset
-from ssiexport.monkeypatch import apply_monkeypatch, apply_manager_monkeypatch
+from ssiexport.monkeypatch import apply_monkeypatch
 from ssiexport.utils import get_watch_instances, get_modified_templates
 
 from .export import ArticleExport
@@ -25,11 +24,9 @@ class QuerysetTestCase(TestCase):
         self.qs = Article.objects.published()
 
     def test_set_get(self):
-        apply_manager_monkeypatch(Article.objects)
         dburl, instance = export_instance(self.article1)
         dbqs = Queryset()
         dbqs.url = dburl
-        dbqs.content_type = ContentType.objects.get_for_model(Article)
         dbqs.set(self.qs)
         dbqs.save()
         dbqs = Queryset.objects.get(pk=dbqs.pk)
@@ -58,7 +55,6 @@ class MonkeyPatchTestCase(TestCase):
         self.article2 = Article.objects.create(title="My Second Post")
 
     def test_manager_monkeypatch(self):
-        apply_manager_monkeypatch(Article.objects)
         qs = Article.objects.published()
         qs = qs.filter(title__contains="foobar")
         dt = date(2014, 01, 01)
@@ -90,11 +86,6 @@ class UtilsTestCase(TestCase):
         )
 
     def test_export_url(self):
-        dburl = export_url("/")
-        self.assertQuerysetEqual(
-            dburl.templates.all(),
-            ['<Template: index.html>'],
-        )
         dburl = export_url("/")
         self.assertQuerysetEqual(
             dburl.templates.all(),

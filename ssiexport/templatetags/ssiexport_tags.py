@@ -1,10 +1,12 @@
 # coding: utf-8
 
+from django.db.models.query import QuerySet
 from django import template
 
 from classytags.arguments import MultiValueArgument
 from classytags.core import Tag, Options
 
+from ssiexport.monkeypatch import CALLS
 from ssiexport import world
 
 
@@ -18,8 +20,15 @@ class Watch(Tag):
     )
 
     def render_tag(self, context, objects):
+
         if hasattr(world, "watch"):
-            world.watch += objects
+            for obj in objects:
+                if isinstance(obj, QuerySet):
+                    if not hasattr(obj, CALLS):
+                        msg = "Queryset for model %s is not monkey patched."
+                        raise Exception(msg % obj.model)
+
+                world.watch.append(obj)
         return ""
 
 

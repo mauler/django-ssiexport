@@ -1,10 +1,11 @@
-from .models import Article
+from .models import Article, Author
 
 
 class ArticleExport(object):
 
     def get_querysets(self):
         return (
+            Author.objects.all(),
             Article.objects.all(),
         )
 

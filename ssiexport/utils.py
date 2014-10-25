@@ -2,6 +2,9 @@
 
 import hashlib
 
+from django.contrib.contenttypes.models import ContentType
+from django.db.models.query import QuerySet
+from django.db import models
 from django.template.loader import get_template
 
 
@@ -21,9 +24,6 @@ def get_modified_templates():
 
 
 def get_watch_instances():
-    from django.contrib.contenttypes.models import ContentType
-    from django.db.models.query import QuerySet
-    from django.db import models
     from .models import Instance
     from . import world
 
@@ -46,3 +46,13 @@ def get_watch_instances():
                         content_type=ct, object_id=instance.pk)
                 instances.append(dbinstance)
     return set(instances)
+
+
+def get_watch_querysets():
+    from . import world
+
+    qss = []
+    for obj in getattr(world, 'watch', []):
+        if isinstance(obj, QuerySet):
+            qss.append(obj)
+    return qss

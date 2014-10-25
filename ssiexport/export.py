@@ -7,7 +7,7 @@ import hashlib
 from django.contrib.contenttypes.models import ContentType
 from django.test.client import Client
 
-from .utils import get_watch_instances
+from .utils import get_watch_instances, get_watch_querysets
 from . import world, SSIEXPORT_WWW_PATH
 
 
@@ -23,7 +23,12 @@ def export_instance(instance):
 
 
 def export_url(original_url):
-    from .models import URL, Template
+
+    # from ssiexport.monkeypatch import apply_manager_monkeypatch
+    # from test_app.models import Author
+    # apply_manager_monkeypatch(Author.objects)
+
+    from .models import URL, Template, Queryset
     world.watch = []
     url = original_url
     if url.endswith("/"):
@@ -56,5 +61,13 @@ def export_url(original_url):
 
     for instance in get_watch_instances():
         dburl.instances.add(instance)
+
+    dburl.queryset_set.all()
+
+    for qs in get_watch_querysets():
+        dbqs = Queryset()
+        dbqs.url = dburl
+        dbqs.set(qs)
+        dbqs.save()
 
     return dburl

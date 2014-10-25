@@ -12,7 +12,7 @@ def apply_manager_monkeypatch(manager):
     def is_valid_name(name):
         return \
             not name.startswith("_") and \
-            name not in ("get_query_set", "model", )
+            name not in ("get_query_set", "model", "values_list")
 
     def patch(obj):
         for name in dir(manager):
