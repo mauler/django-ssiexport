@@ -2,6 +2,8 @@
 
 from django.db import models
 
+from .manager import ArticleManager
+
 
 class Author(models.Model):
     name = models.CharField(max_length=100)
@@ -14,6 +16,7 @@ class Author(models.Model):
 
 
 class Article(models.Model):
+    objects = ArticleManager()
     authors = models.ManyToManyField("Author")
     title = models.CharField(max_length=255)
     text = models.TextField()

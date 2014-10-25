@@ -6,7 +6,29 @@ from django.core.files.storage import get_storage_class
 from django.db.models import signals
 from django.db import models
 
+import bson
+
 from . import SSIEXPORT_WWW_PATH
+
+
+class Queryset(models.Model):
+    url = models.ForeignKey("URL")
+    content_type = models.ForeignKey(ContentType)
+    bson_data = models.TextField()
+
+    def get(self):
+        objects = self.content_type.model_class().objects
+        data = bson.loads(self.bson_data).get('data', [])
+        qs = objects
+        for chain, args, kwargs in data:
+            qs = getattr(qs, chain)
+            qs = qs(*args, **kwargs)
+        if qs == objects:
+            qs = qs.all()
+        return qs
+
+    def set(self, qs):
+        self.bson_data = bson.dumps({'data': qs._monkeypatch_calls})
 
 
 class Instance(models.Model):
@@ -92,6 +114,7 @@ for exporter_class in get_exporters():
                 export_instance(instance)
 
         model_class = qs.model
+
         signals.post_delete.connect(
             post_delete_signal, sender=model_class)
         signals.post_save.connect(

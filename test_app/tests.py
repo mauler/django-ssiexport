@@ -3,17 +3,42 @@
 from datetime import date
 from distutils.filelist import findall
 
+from django.contrib.contenttypes.models import ContentType
 from django.core.management import call_command
 from django.test import TestCase
 
 from ssiexport.loading import get_exporters
 from ssiexport.export import export_instance, export_url
-from ssiexport.models import URL, Template
+from ssiexport.models import URL, Template, Queryset
 from ssiexport.monkeypatch import apply_monkeypatch, apply_manager_monkeypatch
 from ssiexport.utils import get_watch_instances, get_modified_templates
 
 from .export import ArticleExport
 from .models import Article, Author
+
+
+class QuerysetTestCase(TestCase):
+
+    def setUp(self):
+        self.article1 = Article.objects.create(title="My First Post")
+        self.article2 = Article.objects.create(title="My Second Post")
+        self.qs = Article.objects.published()
+
+    def test_set_get(self):
+        apply_manager_monkeypatch(Article.objects)
+        dburl, instance = export_instance(self.article1)
+        dbqs = Queryset()
+        dbqs.url = dburl
+        dbqs.content_type = ContentType.objects.get_for_model(Article)
+        dbqs.set(self.qs)
+        dbqs.save()
+        dbqs = Queryset.objects.get(pk=dbqs.pk)
+        qs = dbqs.get()
+        self.assertQuerysetEqual(
+            self.qs, ['<Article: My First Post>', '<Article: My Second Post>'])
+
+        self.assertQuerysetEqual(
+            qs, ['<Article: My First Post>', '<Article: My Second Post>'])
 
 
 class CommandTestCase(TestCase):
@@ -34,13 +59,13 @@ class MonkeyPatchTestCase(TestCase):
 
     def test_manager_monkeypatch(self):
         apply_manager_monkeypatch(Article.objects)
-        qs = Article.objects.all()
+        qs = Article.objects.published()
         qs = qs.filter(title__contains="foobar")
         dt = date(2014, 01, 01)
         qs = qs.exclude(date_created__lte=dt)
         calls = qs._monkeypatch_calls
         self.assertEqual(calls, [
-            ("all", (), {}),
+            ("published", (), {}),
             ("filter", (), {"title__contains": "foobar"}),
             ("exclude", (), {"date_created__lte": date(2014, 01, 01)}),
         ])
