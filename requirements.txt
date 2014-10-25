@@ -2,3 +2,4 @@ Django==1.5.10
 coverage==4.0a1
 django-classy-tags==0.5.1
 django-coverage==1.2.4
+bson==0.3.3
