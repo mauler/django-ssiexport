@@ -6,35 +6,51 @@ from django.test.utils import instrumented_test_render
 
 CALLS = "_monkeypatch_calls"
 
+INVALID = (
+    "get_queryset",
+    "model",
+    # "values_list",
+    # "aggregate",
+    # "values",
+    # "using",
+    # "reverse",
+)
+
+
+def patch(original):
+    for name in dir(original):
+
+        if name in INVALID:
+            continue
+
+        if name.startswith("_"):
+            continue
+
+        attr = getattr(original, name)
+
+        if callable(attr):
+
+            def patch_callable(name, func):
+
+                def newfunc(*args, **kwargs):
+                    # print 'name', repr(name)
+                    result = func(*args, **kwargs)
+
+                    if isinstance(result, QuerySet):
+                        if not hasattr(result, CALLS):
+                            calls = getattr(original, CALLS, [])
+                            setattr(result, CALLS, calls)
+                            getattr(result, CALLS).append((name, args, kwargs))
+                        patch(result)
+
+                    return result
+
+                setattr(original, name, newfunc)
+
+            patch_callable(name, attr)
+
 
 def apply_manager_monkeypatch(manager):
-
-    def is_valid_name(name):
-        return \
-            not name.startswith("_") and \
-            name not in ("get_query_set", "model", "values_list")
-
-    def patch(obj):
-        for name in dir(manager):
-            attr = getattr(manager, name)
-
-            if not is_valid_name(name):
-                continue
-
-            if callable(attr):
-
-                def patch_callable(obj, name, attr):
-                    def newobj(*args, **kwargs):
-                        result = attr(*args, **kwargs)
-                        if isinstance(result, QuerySet):
-                            setattr(result, CALLS, getattr(obj, CALLS, []))
-                            getattr(result, CALLS).append((name, args, kwargs))
-                            patch(result)
-                        return result
-                    setattr(obj, name, newobj)
-
-                patch_callable(obj, name, attr)
-
     patch(manager)
 
 

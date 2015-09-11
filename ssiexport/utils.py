@@ -8,13 +8,28 @@ from django.db import models
 from django.template.loader import get_template
 
 
+def get_template_source(tpl):
+    source = ""
+    if hasattr(tpl, "nodelist"):
+        for node in tpl.nodelist:
+            source += get_template_source(node)
+
+    elif hasattr(tpl, "s"):
+        source += tpl.s
+
+    else:
+        source = str(tpl)
+
+    return source
+
+
 def get_modified_templates():
     from .models import Template
     modified = []
     qs = Template.objects.values_list("md5sum", "name")
     for md5sum, name in qs:
         tpl = get_template(name)
-        source = open(tpl.nodelist[0].source[0].name).read()
+        source = get_template_source(tpl)
         current_md5sum = hashlib.md5(source).hexdigest()
         tplqs = \
             Template.objects.filter(name=name).exclude(md5sum=current_md5sum)

@@ -3,3 +3,4 @@ coverage
 django-classy-tags
 django-coverage
 pymongo
+bson

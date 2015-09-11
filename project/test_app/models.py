@@ -23,6 +23,9 @@ class Article(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ("date_created", )
+
     def __unicode__(self):
         return self.title
 

@@ -1,0 +1,25 @@
+{% load ssiexport_tags %}
+<html>
+    <body>
+        {% block body %}
+            {% watch articles %}
+            {% for article in articles %}
+                {% watch article %}
+                <h2>
+                    {{ article }}
+                </h2>
+                {{ article.text|linebreaks }}
+                {% comment %}
+                    {% if article.authors.exists %}
+                    <p>
+                        {% watch article.authors.all %}
+                        {% for author in article.authors.all %}
+                            {{  author }},
+                        {% endfor %}
+                    </p>
+                    {% endif %}
+                {% endcomment %}
+            {% endfor %}
+        {% endblock %}
+    </body>
+</html>

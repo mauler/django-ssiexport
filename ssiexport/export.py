@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from __future__ import unicode_literals
+
 from distutils.dir_util import mkpath
 from os.path import join
 import hashlib
@@ -7,7 +9,8 @@ import hashlib
 from django.contrib.contenttypes.models import ContentType
 from django.test.client import Client
 
-from .utils import get_watch_instances, get_watch_querysets
+from .utils import get_watch_instances, get_watch_querysets, \
+    get_template_source
 from . import world, SSIEXPORT_WWW_PATH
 
 
@@ -49,7 +52,7 @@ def export_url(original_url):
     if not created:
         dburl.templates.clear()
     for i in response.templates:
-        source = open(i.nodelist[0].source[0].name).read()
+        source = get_template_source(i)
         md5sum = hashlib.md5(source).hexdigest()
         dbtemplate, created = \
             Template.objects.get_or_create(

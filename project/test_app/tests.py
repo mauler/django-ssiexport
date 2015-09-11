@@ -31,21 +31,12 @@ class QuerysetTestCase(TestCase):
         dbqs.save()
         dbqs = Queryset.objects.get(pk=dbqs.pk)
         qs = dbqs.get()
+
         self.assertQuerysetEqual(
             self.qs, ['<Article: My First Post>', '<Article: My Second Post>'])
 
         self.assertQuerysetEqual(
             qs, ['<Article: My First Post>', '<Article: My Second Post>'])
-
-
-class CommandTestCase(TestCase):
-
-    def setUp(self):
-        self.article1 = Article.objects.create(title="My First Post")
-        self.article2 = Article.objects.create(title="My Second Post")
-
-    def test_command_ssiexport_all(self):
-        call_command('ssiexport_all')
 
 
 class MonkeyPatchTestCase(TestCase):
@@ -55,6 +46,7 @@ class MonkeyPatchTestCase(TestCase):
         self.article2 = Article.objects.create(title="My Second Post")
 
     def test_manager_monkeypatch(self):
+        qs = Article.objects.all()
         qs = Article.objects.published()
         qs = qs.filter(title__contains="foobar")
         dt = date(2014, 01, 01)
@@ -120,7 +112,10 @@ class UtilsTestCase(TestCase):
         )
         self.assertEqual(
             findall("export"),
-            ['export/www/index.shtml', 'export/www/article/1/index.shtml'])
+            [
+                'export/www/index.shtml',
+                'export/www/article/1/index.shtml',
+            ])
 
     def test_connect_signals(self):
         article = Article.objects.create(title="new article")
@@ -128,3 +123,13 @@ class UtilsTestCase(TestCase):
         qs = URL.objects.filter(path=article.get_absolute_url())
         self.assertTrue(qs.exists())
         article.delete()
+
+
+class CommandTestCase(TestCase):
+
+    def setUp(self):
+        self.article1 = Article.objects.create(title="My First Post")
+        self.article2 = Article.objects.create(title="My Second Post")
+
+    def test_command_ssiexport_all(self):
+        call_command('ssiexport_all')
